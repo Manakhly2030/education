@@ -9,9 +9,9 @@ from education import __version__ as version
 setup(
 	name="education",
 	version=version,
-	description="Education",
-	author="Frappe Technologies Pvt. Ltd.",
-	author_email="hello@frappe.io",
+	description="Opta Education",
+	author="Opta Technology.",
+	author_email="Manakhly@erp-developers.com",
 	packages=find_packages(),
 	zip_safe=False,
 	include_package_data=True,
