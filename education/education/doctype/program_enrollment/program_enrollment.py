@@ -8,15 +8,16 @@ from frappe.desk.reportview import get_match_cond
 from frappe.model.document import Document
 from frappe.query_builder.functions import Min
 from frappe.utils import comma_and, get_link_to_form, getdate
+from education.education.doctype.fee_schedule.fee_schedule import (
+	create_sales_invoice,
+	create_sales_order,
+)
 
 
 class ProgramEnrollment(Document):
 	def validate(self):
 		self.set_student_name()
 		self.validate_duplication()
-		self.validate_academic_year()
-		if self.academic_term:
-			self.validate_academic_term()
 
 		if not self.courses:
 			self.extend("courses", self.get_courses())
@@ -30,54 +31,22 @@ class ProgramEnrollment(Document):
 		self.make_fee_records()
 		self.create_course_enrollments()
 
-	def validate_academic_year(self):
-		start_date, end_date = frappe.db.get_value(
-			"Academic Year", self.academic_year, ["year_start_date", "year_end_date"]
-		)
-		if self.enrollment_date:
-			if start_date and getdate(self.enrollment_date) < getdate(start_date):
-				frappe.throw(
-					_(
-						"Enrollment Date cannot be before the Start Date of the Academic Year {0}"
-					).format(get_link_to_form("Academic Year", self.academic_year))
-				)
-
-			if end_date and getdate(self.enrollment_date) > getdate(end_date):
-				frappe.throw(
-					_("Enrollment Date cannot be after the End Date of the Academic Term {0}").format(
-						get_link_to_form("Academic Year", self.academic_year)
-					)
-				)
-
-	def validate_academic_term(self):
-		start_date, end_date = frappe.db.get_value(
-			"Academic Term", self.academic_term, ["term_start_date", "term_end_date"]
-		)
-		if self.enrollment_date:
-			if start_date and getdate(self.enrollment_date) < getdate(start_date):
-				frappe.throw(
-					_(
-						"Enrollment Date cannot be before the Start Date of the Academic Term {0}"
-					).format(get_link_to_form("Academic Term", self.academic_term))
-				)
-
-			if end_date and getdate(self.enrollment_date) > getdate(end_date):
-				frappe.throw(
-					_("Enrollment Date cannot be after the End Date of the Academic Term {0}").format(
-						get_link_to_form("Academic Term", self.academic_term)
-					)
-				)
+	def on_cancel(self):
+		self.delete_course_enrollments()
+		pass
 
 	def validate_duplication(self):
 		enrollment = frappe.db.exists(
-			"Program Enrollment", {
+			"Program Enrollment",
+			{
 				"student": self.student,
 				"program": self.program,
 				"academic_year": self.academic_year,
 				"academic_term": self.academic_term,
 				"docstatus": ("<", 2),
 				"name": ("!=", self.name),
-			})
+			},
+		)
 		if enrollment:
 			frappe.throw(_("Student is already enrolled."))
 
@@ -95,34 +64,26 @@ class ProgramEnrollment(Document):
 	def make_fee_records(self):
 		from education.education.api import get_fee_components
 
-		fee_list = []
-		for d in self.fees:
-			fee_components = get_fee_components(d.fee_structure)
-			if fee_components:
-				fees = frappe.new_doc("Fees")
-				fees.update(
-					{
-						"student": self.student,
-						"academic_year": self.academic_year,
-						"academic_term": d.academic_term,
-						"fee_structure": d.fee_structure,
-						"program": self.program,
-						"due_date": d.due_date,
-						"student_name": self.student_name,
-						"program_enrollment": self.name,
-						"components": fee_components,
-					}
-				)
+		create_so = frappe.db.get_single_value("Education Settings", "create_so")
 
-				fees.save()
-				fees.submit()
-				fee_list.append(fees.name)
-		if fee_list:
-			fee_list = [
-				"""<a href="/app/Form/Fees/%s" target="_blank">%s</a>""" % (fee, fee)
-				for fee in fee_list
+		fees_list = []
+		doctype = ""
+		for d in self.fees:
+			if create_so:
+				sales_order = create_sales_order(d.fee_schedule, self.student)
+				doctype = "Sales Order"
+				fees_list.append(sales_order)
+			else:
+				sales_invoice = create_sales_invoice(d.fee_schedule, self.student)
+				doctype = "Sales Invoice"
+				fees_list.append(sales_invoice)
+
+		if fees_list:
+			fees_list = [
+				"""<a href="/app/Form/%s/%s" target="_blank">%s</a>""" % (doctype, fee, fee)
+				for fee in fees_list
 			]
-			msgprint(_("Fee Records Created - {0}").format(comma_and(fee_list)))
+			msgprint(_("Fee Records Created - {0}").format(comma_and(fees_list)))
 
 	@frappe.whitelist()
 	def get_courses(self):
@@ -154,22 +115,9 @@ class ProgramEnrollment(Document):
 			for course_enrollment in course_enrollment_names
 		]
 
-	def get_quiz_progress(self):
-		student = frappe.get_doc("Student", self.student)
-		quiz_progress = frappe._dict()
-		progress_list = []
+	def delete_course_enrollments(self):
 		for course_enrollment in self.get_all_course_enrollments():
-			course_progress = course_enrollment.get_progress(student)
-			for progress_item in course_progress:
-				if progress_item["content_type"] == "Quiz":
-					progress_item["course"] = course_enrollment.course
-					progress_list.append(progress_item)
-		if not progress_list:
-			return None
-		quiz_progress.quiz_attempt = progress_list
-		quiz_progress.name = self.program
-		quiz_progress.program = self.program
-		return quiz_progress
+			frappe.delete_doc("Course Enrollment", course_enrollment.name)
 
 
 @frappe.whitelist()
@@ -182,12 +130,12 @@ def get_program_courses(doctype, txt, searchfield, start, page_len, filters):
 	doctype = "Program Course"
 	return frappe.db.sql(
 		"""select course, course_name from `tabProgram Course`
-		where  parent = %(program)s and course like %(txt)s {match_cond}
-		order by
-			if(locate(%(_txt)s, course), locate(%(_txt)s, course), 99999),
-			idx desc,
-			`tabProgram Course`.course asc
-		limit {start}, {page_len}""".format(
+        where  parent = %(program)s and course like %(txt)s {match_cond}
+        order by
+            if(locate(%(_txt)s, course), locate(%(_txt)s, course), 99999),
+            idx desc,
+            `tabProgram Course`.course asc
+        limit {start}, {page_len}""".format(
 			match_cond=get_match_cond(doctype), start=start, page_len=page_len
 		),
 		{
@@ -220,14 +168,14 @@ def get_students(doctype, txt, searchfield, start, page_len, filters):
 
 	return frappe.db.sql(
 		"""select
-			name, student_name from tabStudent
-		where
-			name not in (%s)
-		and
-			`%s` LIKE %s
-		order by
-			idx desc, name
-		limit %s, %s"""
+            name, student_name from tabStudent
+        where
+            name not in (%s)
+        and
+            `%s` LIKE %s
+        order by
+            idx desc, name
+        limit %s, %s"""
 		% (", ".join(["%s"] * len(students)), searchfield, "%s", "%s", "%s"),
 		tuple(students + ["%%%s%%" % txt, start, page_len]),
 	)

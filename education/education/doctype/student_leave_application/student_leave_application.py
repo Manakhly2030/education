@@ -61,6 +61,17 @@ class StudentLeaveApplication(Document):
 		)
 
 	def update_attendance(self):
+
+		# get classes organized between from_date and to_date
+		leave_classes = frappe.db.get_list(
+			"Course Schedule",
+			filters={
+				"docstatus": 1,
+				"schedule_date": ("between", [self.from_date, self.to_date]),
+			},
+			fields=["name"],
+		)
+
 		holiday_list = get_holiday_list()
 
 		for dt in daterange(getdate(self.from_date), getdate(self.to_date)):
@@ -74,7 +85,7 @@ class StudentLeaveApplication(Document):
 				{"student": self.student, "date": date, "docstatus": ("!=", 2)},
 			)
 
-			status = "Present" if self.mark_as_present else "Absent"
+			status = "Present" if self.mark_as_present else "Leave"
 			if attendance:
 				# update existing attendance record
 				values = dict()

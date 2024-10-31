@@ -11,7 +11,6 @@
   "posting_date",
   "due_date",
   "naming_series",
-  "fee_creation_status",
   "send_email",
   "column_break_4",
   "student_category",
@@ -34,7 +33,6 @@
   "select_print_heading",
   "account",
   "receivable_account",
-  "income_account",
   "column_break_39",
   "company",
   "amended_from",
@@ -42,7 +40,8 @@
   "cost_center",
   "dimension_col_break",
   "section_break_31",
-  "error_log"
+  "error_log",
+  "status"
  ],
  "fields": [
   {
@@ -68,11 +67,15 @@
    "options": "EDU-FSH-.YYYY.-"
   },
   {
-   "fieldname": "fee_creation_status",
+   "fieldname": "status",
    "fieldtype": "Select",
-   "label": "Fee Creation Status",
+   "hide_days": 1,
+   "hide_seconds": 1,
+   "in_standard_filter": 1,
+   "label": "Status",
+   "length": 30,
    "no_copy": 1,
-   "options": "\nIn Process\nFailed\nSuccessful",
+   "options": "Draft\nCancelled\nInvoice Pending\nOrder Pending\nIn Process\nInvoice Created\nOrder Created\nFailed",
    "print_hide": 1,
    "read_only": 1
   },
@@ -134,14 +137,14 @@
   {
    "fieldname": "section_break_14",
    "fieldtype": "Section Break",
-   "label": "Fee Breakup for each student",
+   "label": "Fee Breakup (each student)",
    "read_only": 1
   },
   {
    "fieldname": "components",
    "fieldtype": "Table",
-   "options": "Fee Component",
-   "read_only": 1
+   "label": "Components",
+   "options": "Fee Component"
   },
   {
    "fieldname": "section_break_16",
@@ -213,13 +216,6 @@
    "options": "Account"
   },
   {
-   "fetch_from": "fee_structure.income_account",
-   "fieldname": "income_account",
-   "fieldtype": "Link",
-   "label": "Income Account",
-   "options": "Account"
-  },
-  {
    "fieldname": "column_break_39",
    "fieldtype": "Column Break"
   },
@@ -275,8 +271,17 @@
   }
  ],
  "is_submittable": 1,
- "links": [],
- "modified": "2023-02-14 10:49:39.758005",
+ "links": [
+  {
+   "link_doctype": "Sales Invoice",
+   "link_fieldname": "fee_schedule"
+  },
+  {
+   "link_doctype": "Sales Order",
+   "link_fieldname": "fee_schedule"
+  }
+ ],
+ "modified": "2024-07-10 00:17:14.407591",
  "modified_by": "Administrator",
  "module": "Education",
  "name": "Fee Schedule",
@@ -327,5 +332,30 @@
  ],
  "sort_field": "modified",
  "sort_order": "DESC",
- "states": []
+ "states": [
+  {
+   "color": "Orange",
+   "title": "Invoice Pending"
+  },
+  {
+   "color": "Orange",
+   "title": "Order Pending"
+  },
+  {
+   "color": "Orange",
+   "title": "In Process"
+  },
+  {
+   "color": "Green",
+   "title": "Order Created"
+  },
+  {
+   "color": "Green",
+   "title": "Invoice Created"
+  },
+  {
+   "color": "Red",
+   "title": "Fee Creation Failed"
+  }
+ ]
 }

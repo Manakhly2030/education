@@ -21,7 +21,7 @@ frappe.ui.form.on('Program Enrollment', {
 			};
 		});
 
-		frm.fields_dict['fees'].grid.get_field('fee_structure').get_query = function(doc, cdt, cdn) {
+		frm.fields_dict['fees'].grid.get_field('fee_schedule').get_query = function(doc, cdt, cdn) {
 			var d = locals[cdt][cdn];
 			return {
 				filters: {'academic_term': d.academic_term}
@@ -39,15 +39,15 @@ frappe.ui.form.on('Program Enrollment', {
 			});
 		}
 
-		frm.set_query('student', function() {
-			return{
-				query: 'education.education.doctype.program_enrollment.program_enrollment.get_students',
-				filters: {
-					'academic_year': frm.doc.academic_year,
-					'academic_term': frm.doc.academic_term
-				}
-			}
-		});
+		// frm.set_query('student', function() {
+		// 	return{
+		// 		query: 'education.education.doctype.program_enrollment.program_enrollment.get_students',
+		// 		filters: {
+		// 			'academic_year': frm.doc.academic_year,
+		// 			'academic_term': frm.doc.academic_term
+		// 		}
+		// 	}
+		// });
 	},
 
 	program: function(frm) {

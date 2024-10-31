@@ -20,6 +20,8 @@
  ],
  "fields": [
   {
+   "fetch_from": "employee.employee_name",
+   "fetch_if_empty": 1,
    "fieldname": "instructor_name",
    "fieldtype": "Data",
    "in_global_search": 1,
@@ -90,7 +92,7 @@
  ],
  "image_field": "image",
  "links": [],
- "modified": "2023-11-21 19:11:38.243654",
+ "modified": "2024-05-31 14:15:19.085273",
  "modified_by": "Administrator",
  "module": "Education",
  "name": "Instructor",
@@ -113,6 +115,18 @@
    "read": 1,
    "report": 1,
    "role": "Education Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
    "share": 1,
    "write": 1
   }
