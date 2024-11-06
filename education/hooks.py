@@ -2,7 +2,7 @@ from . import __version__ as app_version
 
 app_name = "education"
 app_title = "Education"
-app_publisher = "Frappe Technologies Pvt. Ltd."
+app_publisher = "Opta Technology"
 app_description = "Education"
 app_icon = "octicon octicon-file-directory"
 app_color = "grey"
@@ -10,7 +10,7 @@ app_email = "hello@frappe.io"
 app_license = "GNU GPL V3"
 
 required_apps = ["erpnext"]
-
+from frappe import _
 # Includes in <head>
 # ------------------
 
