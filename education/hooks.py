@@ -4,7 +4,7 @@ from . import __version__ as app_version
 
 app_name = "education"
 app_title = "Education"
-app_publisher = "Frappe Technologies Pvt. Ltd."
+app_publisher = "Opta Technology"
 app_description = "Education"
 app_icon = "octicon octicon-file-directory"
 app_color = "grey"
@@ -27,7 +27,7 @@ app_include_js = "education.bundle.js"
 
 # include custom scss in every website theme (without file extension ".scss")
 # website_theme_scss = "education/public/scss/website"
-
+from frappe import _
 # website
 update_website_context = []
 
